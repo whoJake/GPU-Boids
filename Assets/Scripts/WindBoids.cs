@@ -14,6 +14,7 @@ public class WindBoids : MonoBehaviour
     [Header("Boid Settings")]
     [Min(1)]
     public int numberOfBoids;
+    public float speed = 1f;
     #endregion
 
     #region Internal Variables
@@ -30,36 +31,41 @@ public class WindBoids : MonoBehaviour
         public Vector2 position;
         public Vector2 direction;
 
+        public Vector4 color;
+
         public static int Size {
             get {
-                return sizeof(float) * 2 * 2;
+                return (sizeof(float) * 2 * 2) + (sizeof(float) * 4);
             }
         }
     }
 
     void OnEnable() {
-        if(!outputTexture.IsCreated() || outputTexture == default || outputTexture == null) {
-            outputTexture = new RenderTexture(outputTextureSize.x, outputTextureSize.y, 24);
-        }
-        boidHandler = new Boid[numberOfBoids];
-
         #region Load Resources
         boidCompute = Resources.Load<ComputeShader>("WindBoidsCompute");
         #endregion
+    }
 
+    void Start() {
+        outputTexture = new RenderTexture(outputTextureSize.x, outputTextureSize.y, 0);
+        outputTexture.filterMode = FilterMode.Point;
+        outputTexture.enableRandomWrite = true;
+        outputTexture.Create();
         outputImage.texture = outputTexture;
-
-        computeDim = new int[2] { outputTextureSize.x, outputTextureSize.y };
 
         //Perform initial setup
         SetUpBoids();
+        computeDim = new int[2] { outputTextureSize.x, outputTextureSize.y };
     }
 
+    //Set position, random direction, random colour
     void SetUpBoids() {
-        for(int i = 0; i < numberOfBoids; i++) {
+        boidHandler = new Boid[numberOfBoids];
+        for (int i = 0; i < numberOfBoids; i++) {
             boidHandler[i] = new Boid {
-                position = new Vector2(100, 100),
-                direction = new Vector2(Random.Range(0f, 1f), Random.Range(0f, 1f))
+                position = new Vector2(50, 50),
+                direction = new Vector2(Random.Range(-1f, 1f), Random.Range(-1f, 1f)),
+                color = Random.ColorHSV()
             };
         }
     }
@@ -73,14 +79,15 @@ public class WindBoids : MonoBehaviour
         //Set compute variables
         boidCompute.SetTexture(0, "_WindTexture", outputTexture);
         boidCompute.SetBuffer(0, "_BoidData", boidBuffer);
-        boidCompute.SetFloat("_Speed", 1f);
+        boidCompute.SetFloat("_Speed", speed);
         boidCompute.SetInts("_TextureDimensions", computeDim);
 
-        //Start compute
+        //Dispatch
         boidCompute.Dispatch(0, numOfBatches, 1, 1);
 
-        //Release buffers
-        boidBuffer.Dispose();
+        //Read data and release buffer
+        boidBuffer.GetData(boidHandler);
+        boidBuffer.Release();
     }
 
 }

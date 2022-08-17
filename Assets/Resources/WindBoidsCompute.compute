@@ -1,0 +1,38 @@
+#pragma kernel GenerateTexture
+
+struct Boid {
+    float2 position;
+    float2 direction;
+
+    float4 color;
+};
+
+RWTexture2D<float4> _WindTexture;
+RWStructuredBuffer<Boid> _BoidData;
+float _Speed;
+uint2 _TextureDimensions;
+
+//Move Boid by one step
+void MoveBoid(uint3 id){
+    float xDiff = (_BoidData[id.x].direction.x * _Speed) % _TextureDimensions.x;
+    float yDiff = (_BoidData[id.x].direction.y * _Speed) % _TextureDimensions.y;
+
+    _BoidData[id.x].position += float2(xDiff, yDiff);
+    float2 p = _BoidData[id.x].position;
+
+    //Handling wrapping around the texture
+    if(p.x < 0) _BoidData[id.x].position.x = _TextureDimensions.x + p.x;
+    else if(p.x > (float)_TextureDimensions.x) _BoidData[id.x].position.x = p.x - _TextureDimensions.x;
+
+    
+    if(p.y < 0) _BoidData[id.x].position.y = _TextureDimensions.y + p.y;
+    else if(p.y > (float)_TextureDimensions.y) _BoidData[id.x].position.y = p.y - _TextureDimensions.y;
+}
+
+[numthreads(8,1,1)]
+void GenerateTexture (uint3 id : SV_DispatchThreadID)
+{
+    MoveBoid(id);
+    //Draw Boid to Texture
+    _WindTexture[(uint2)_BoidData[id.x].position.xy] = float4(_BoidData[id.x].color.r, _BoidData[id.x].color.g, _BoidData[id.x].color.b, 1);
+}

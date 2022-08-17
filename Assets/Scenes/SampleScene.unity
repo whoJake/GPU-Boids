@@ -398,9 +398,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fa72093d8d6147d46b89a9c8da5c2c3a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  outputTextureSize: {x: 1024, y: 1024}
+  outputTextureSize: {x: 256, y: 256}
   outputImage: {fileID: 1312291889}
-  numberOfBoids: 10
+  numberOfBoids: 1000
+  speed: 0.2
 --- !u!4 &1183283917
 Transform:
   m_ObjectHideFlags: 0
