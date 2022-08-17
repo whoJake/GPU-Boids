@@ -399,15 +399,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   textureSize: {x: 1024, y: 1024}
-  windSpeed: 1
-  frequency: 1
-  amplitude: 1
-  period: {x: 0.05, y: 0.1}
-  turbulencePower: 2.3
-  turbulenceSize: 2
+  baseSettings: {fileID: 11400000, guid: e0ac7566daf0b1e42ae2d06834f3cd71, type: 2}
+  secondarySettings: {fileID: 11400000, guid: 93f3cc81d3848dc49a3480dc614060fd, type: 2}
+  autoUpdateBaseSettings: 1
   windTexture: {fileID: 8400000, guid: 6f22e978063e80744891d2af888411a4, type: 2}
   canvas: {fileID: 1312291889}
   windGeneratorShader: {fileID: 7200000, guid: 963da7d530c5d5e42a1150c46501046e, type: 3}
+  blendTime: 5
+  steps: 100
 --- !u!4 &1232455742
 Transform:
   m_ObjectHideFlags: 0
