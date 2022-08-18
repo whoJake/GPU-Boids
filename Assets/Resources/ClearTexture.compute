@@ -1,0 +1,13 @@
+#pragma kernel Clear
+
+RWTexture2D<float4> _Texture;
+float width, height;
+
+[numthreads(8,8,1)]
+void Clear (uint3 id : SV_DispatchThreadID)
+{
+    if (id.x < 0 || id.x >= (uint)width || id.y < 0 || id.y >= (uint)height) {
+		return;
+	}
+    _Texture[id.xy] = 0;
+}

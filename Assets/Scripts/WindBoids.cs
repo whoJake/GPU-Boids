@@ -15,6 +15,10 @@ public class WindBoids : MonoBehaviour
     [Min(1)]
     public int numberOfBoids;
     public float speed = 1f;
+
+    [Header("Processing Settings")]
+    [Range(0f, 1f)]
+    public float fadeSpeed;
     #endregion
 
     #region Internal Variables
@@ -22,9 +26,13 @@ public class WindBoids : MonoBehaviour
     #endregion
 
     #region Compute Shader Variables
-    private RenderTexture outputTexture;
+    private RenderTexture outputBoidTexture;
     private ComputeShader boidCompute;
     private int[] computeDim;
+    #endregion
+
+    #region Compute Helpers
+    private ComputeShader clearTextureCompute;
     #endregion
 
     struct Boid {
@@ -43,15 +51,17 @@ public class WindBoids : MonoBehaviour
     void OnEnable() {
         #region Load Resources
         boidCompute = Resources.Load<ComputeShader>("WindBoidsCompute");
+        clearTextureCompute = Resources.Load<ComputeShader>("ClearTexture");
         #endregion
     }
 
     void Start() {
-        outputTexture = new RenderTexture(outputTextureSize.x, outputTextureSize.y, 0);
-        outputTexture.filterMode = FilterMode.Point;
-        outputTexture.enableRandomWrite = true;
-        outputTexture.Create();
-        outputImage.texture = outputTexture;
+        outputBoidTexture = new RenderTexture(outputTextureSize.x, outputTextureSize.y, 0);
+        outputBoidTexture.filterMode = FilterMode.Point;
+        outputBoidTexture.enableRandomWrite = true;
+        outputBoidTexture.Create();
+
+        outputImage.texture = outputBoidTexture;
 
         //Perform initial setup
         SetUpBoids();
@@ -70,17 +80,21 @@ public class WindBoids : MonoBehaviour
         }
     }
 
-    void Update() {
+    void FixedUpdate() {
+        //Clear agent map
+        //ClearTexture(outputBoidTexture);
+
         //Setup compute variables
         var boidBuffer = new ComputeBuffer(numberOfBoids, Boid.Size);
         boidBuffer.SetData(boidHandler);
         int numOfBatches = Mathf.CeilToInt(numberOfBoids / 8);
 
         //Set compute variables
-        boidCompute.SetTexture(0, "_WindTexture", outputTexture);
+        boidCompute.SetTexture(0, "_BoidMap", outputBoidTexture);
         boidCompute.SetBuffer(0, "_BoidData", boidBuffer);
-        boidCompute.SetFloat("_Speed", speed);
+        boidCompute.SetFloat("_BoidSpeed", speed);
         boidCompute.SetInts("_TextureDimensions", computeDim);
+        boidCompute.SetInt("_BoidCount", numberOfBoids);
 
         //Dispatch
         boidCompute.Dispatch(0, numOfBatches, 1, 1);
@@ -88,6 +102,18 @@ public class WindBoids : MonoBehaviour
         //Read data and release buffer
         boidBuffer.GetData(boidHandler);
         boidBuffer.Release();
+    }
+
+
+    void ClearTexture(RenderTexture rt) {
+        int numBatchX = Mathf.CeilToInt(rt.width / 8);
+        int numBatchY = Mathf.CeilToInt(rt.height / 8);
+
+        clearTextureCompute.SetTexture(0, "_Texture", rt);
+        clearTextureCompute.SetFloat("width", rt.width);
+        clearTextureCompute.SetFloat("height", rt.height);
+
+        clearTextureCompute.Dispatch(0, numBatchX, numBatchY, 1);
     }
 
 }
