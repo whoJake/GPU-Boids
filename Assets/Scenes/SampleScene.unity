@@ -398,13 +398,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fa72093d8d6147d46b89a9c8da5c2c3a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  outputTextureSize: {x: 128, y: 128}
+  outputTextureSize: {x: 256, y: 256}
   outputImage: {fileID: 1312291889}
   clearTrail: 1
-  numberOfBoids: 16
-  speed: 0.05
+  numberOfBoids: 8
+  speed: 0.5
+  minSpeed: 1
+  maxSpeed: 2
   detectionDistance: 10
-  detectionAngle: 180
+  detectionAngle: 270
+  avoidanceWeight: 0.05
   fadeSpeed: 0.05
 --- !u!4 &1183283917
 Transform:

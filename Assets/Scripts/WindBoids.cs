@@ -15,11 +15,18 @@ public class WindBoids : MonoBehaviour
     [Header("Boid Settings")]
     [Min(1)]
     public int numberOfBoids = 1;
+    [Min(0)]
     public float speed = 1f;
+    [Min(0)]
+    public float minSpeed = 1f;
+    [Min(0)]
+    public float maxSpeed = 2f;
     [Min(1)]
     public float detectionDistance = 1f;
     [Range(0, 360)]
     public float detectionAngle;
+    [Range(0, 1)]
+    public float avoidanceWeight;
 
     [Header("Processing Settings")]
     [Range(0f, 1f)]
@@ -46,11 +53,22 @@ public class WindBoids : MonoBehaviour
         public Vector2 position;
         public float angle;
 
+        public float flockHeading;
+        public Vector2 flockCentre;
+        public Vector2 seperationHeading;
+
+        public int numFlockmates;
+
         public Vector4 color;
 
         public static int Size {
             get {
-                return (sizeof(float) * 2) + (sizeof(float)) + (sizeof(float) * 4) + (sizeof(uint));
+                return (sizeof(float) * 2)
+                    + (sizeof(float) * 2)
+                    + (sizeof(float) * 2 * 2)
+                    + (sizeof(int))
+                    + (sizeof(float) * 4)
+                    + (sizeof(uint));
             }
         }
     }
@@ -78,12 +96,20 @@ public class WindBoids : MonoBehaviour
     //Set position, random direction, random colour
     void SetUpBoids() {
         boidHandler = new Boid[numberOfBoids];
-        for (int i = 0; i < numberOfBoids; i++) {
+        boidHandler[0] = new Boid {
+            group = 0,
+            position = new Vector2(Random.Range(0f, outputTextureSize.x), Random.Range(0f, outputTextureSize.y)),
+            angle = Random.Range(0f, Mathf.PI),
+            color = Color.magenta
+        };
+
+
+        for (int i = 1; i < numberOfBoids; i++) {
             boidHandler[i] = new Boid {
                 group = 0,
-                position = new Vector2(Random.Range(0f, outputTextureSize.x), Random.Range(0f, 50f)),
-                angle = 0f * Mathf.Deg2Rad,
-                color = Random.ColorHSV()
+                position = new Vector2(Random.Range(0f, outputTextureSize.x), Random.Range(0f, outputTextureSize.y)),
+                angle = Random.Range(0f, Mathf.PI),
+                color = Color.green
             };
         }
     }
@@ -105,6 +131,9 @@ public class WindBoids : MonoBehaviour
         boidCompute.SetInt("_BoidCount", numberOfBoids);
         boidCompute.SetFloat("_DetectionDistance", detectionDistance);
         boidCompute.SetFloat("_DetectionAngle", detectionAngle * Mathf.Deg2Rad);
+        boidCompute.SetFloat("_AvoidanceWeight", avoidanceWeight);
+        boidCompute.SetFloat("_MinSpeed", minSpeed);
+        boidCompute.SetFloat("_MaxSpeed", maxSpeed);
 
         //Dispatch
         boidCompute.Dispatch(0, numOfBatches, 1, 1);
@@ -112,6 +141,8 @@ public class WindBoids : MonoBehaviour
         //Read data and release buffer
         boidBuffer.GetData(boidHandler);
         boidBuffer.Release();
+
+        Debug.Log("" + boidHandler[0].angle + " x: " + boidHandler[0].position.x + " y: " + boidHandler[0].position.y);
     }
 
 

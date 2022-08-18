@@ -8,6 +8,12 @@ struct Boid {
     float2 position;
     float angle;
 
+    float flockHeading;
+    float2 flockCentre;
+    float2 seperationHeading;
+
+    int numFlockmates;
+
     float4 color;
 };
 
@@ -20,7 +26,11 @@ uint _BoidCount;
 float _BoidSpeed;
 float _DetectionDistance;
 float _DetectionAngle;
-//float _RotationSpeed;
+//
+
+float maxSpeed, minSpeed;
+
+float _AvoidanceWeight;
 
 //Move Boid by one step
 void MoveBoid(uint3 id){
@@ -39,6 +49,10 @@ void MoveBoid(uint3 id){
     else if(p.y > (float)_TextureDimensions.y) _BoidData[id.x].position.y = p.y - _TextureDimensions.y;
 }
 
+void SteerTowards(uint3 id, float targetAngle, float weight){
+    _BoidData[id.x].angle = lerp(_BoidData[id.x].angle, targetAngle, weight);
+}
+
 float4 c;
 
 //Detect neighbours
@@ -54,16 +68,25 @@ void Detect(uint3 id){
         //Compare square distance
         if(distToBoid * distToBoid <= _DetectionDistance * _DetectionDistance){
 
+            //Flock changes
+            _BoidData[id.x].numFlockmates += 1;
+            _BoidData[id.x].flockHeading += _BoidData[i].angle;
+            _BoidData[id.x].flockCentre += _BoidData[i].position;
+
+
             float dirAng = abs(atan(direction.x / direction.y));
             if(direction.y < 0){
                 dirAng = (PI) - dirAng;
             }
 
-            float angDiff = abs(_BoidData[id.x].angle - dirAng);
+            float angDiff = (dirAng - _BoidData[id.x].angle) * (-1 * (direction.x < 0));
             
-            if(angDiff < _DetectionAngle / 2){
-                //Detected in vision
+            //Detected in vision
+            if(abs(angDiff) < _DetectionAngle / 2){
                 c = float4(1, 0, 0, 1);
+
+                //Negative target angle so that they steer in the oposite direction
+                SteerTowards(id, _BoidData[id.x].angle + ((_DetectionAngle / 2) - angDiff), _AvoidanceWeight);
             }
 
         }
@@ -80,6 +103,13 @@ void DrawBoid(uint3 id){
 void SimulateBoids (uint3 id : SV_DispatchThreadID)
 {
     if(!(id.x < _BoidCount)) return;
+
+    //Reset flock values
+    _BoidData[id.x].numFlockmates = 0;
+    _BoidData[id.x].flockHeading = 0;
+    _BoidData[id.x].flockCentre = 0;
+    _BoidData[id.x].seperationHeading = 0;
+
     c = float4(_BoidData[id.x].color.r, _BoidData[id.x].color.g, _BoidData[id.x].color.b, 1);
     MoveBoid(id);
     Detect(id);
