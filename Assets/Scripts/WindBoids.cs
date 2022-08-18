@@ -10,11 +10,16 @@ public class WindBoids : MonoBehaviour
     [Header("Output Settings")]
     public Vector2Int outputTextureSize;
     public RawImage outputImage;
+    public bool clearTrail;
 
     [Header("Boid Settings")]
     [Min(1)]
-    public int numberOfBoids;
+    public int numberOfBoids = 1;
     public float speed = 1f;
+    [Min(1)]
+    public float detectionDistance = 1f;
+    [Range(0, 360)]
+    public float detectionAngle;
 
     [Header("Processing Settings")]
     [Range(0f, 1f)]
@@ -36,14 +41,16 @@ public class WindBoids : MonoBehaviour
     #endregion
 
     struct Boid {
+        public uint group;
+
         public Vector2 position;
-        public Vector2 direction;
+        public float angle;
 
         public Vector4 color;
 
         public static int Size {
             get {
-                return (sizeof(float) * 2 * 2) + (sizeof(float) * 4);
+                return (sizeof(float) * 2) + (sizeof(float)) + (sizeof(float) * 4) + (sizeof(uint));
             }
         }
     }
@@ -73,8 +80,9 @@ public class WindBoids : MonoBehaviour
         boidHandler = new Boid[numberOfBoids];
         for (int i = 0; i < numberOfBoids; i++) {
             boidHandler[i] = new Boid {
-                position = new Vector2(50, 50),
-                direction = new Vector2(Random.Range(-1f, 1f), Random.Range(-1f, 1f)),
+                group = 0,
+                position = new Vector2(Random.Range(0f, outputTextureSize.x), Random.Range(0f, 50f)),
+                angle = 0f * Mathf.Deg2Rad,
                 color = Random.ColorHSV()
             };
         }
@@ -82,7 +90,7 @@ public class WindBoids : MonoBehaviour
 
     void FixedUpdate() {
         //Clear agent map
-        //ClearTexture(outputBoidTexture);
+        if (clearTrail) ClearTexture(outputBoidTexture);
 
         //Setup compute variables
         var boidBuffer = new ComputeBuffer(numberOfBoids, Boid.Size);
@@ -95,6 +103,8 @@ public class WindBoids : MonoBehaviour
         boidCompute.SetFloat("_BoidSpeed", speed);
         boidCompute.SetInts("_TextureDimensions", computeDim);
         boidCompute.SetInt("_BoidCount", numberOfBoids);
+        boidCompute.SetFloat("_DetectionDistance", detectionDistance);
+        boidCompute.SetFloat("_DetectionAngle", detectionAngle * Mathf.Deg2Rad);
 
         //Dispatch
         boidCompute.Dispatch(0, numOfBatches, 1, 1);

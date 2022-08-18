@@ -1,22 +1,31 @@
 #pragma kernel SimulateBoids
 
+static const float PI = 3.14159265f;
+
 struct Boid {
+    uint group;
+
     float2 position;
-    float2 direction;
+    float angle;
 
     float4 color;
 };
 
 RWTexture2D<float4> _BoidMap;
 RWStructuredBuffer<Boid> _BoidData;
-float _BoidSpeed;
 uint2 _TextureDimensions;
+
+//Simulation settings
 uint _BoidCount;
+float _BoidSpeed;
+float _DetectionDistance;
+float _DetectionAngle;
+//float _RotationSpeed;
 
 //Move Boid by one step
 void MoveBoid(uint3 id){
-    float xDiff = (_BoidData[id.x].direction.x * _BoidSpeed) % _TextureDimensions.x;
-    float yDiff = (_BoidData[id.x].direction.y * _BoidSpeed) % _TextureDimensions.y;
+    float xDiff = (sin(_BoidData[id.x].angle) * _BoidSpeed) % _TextureDimensions.x;
+    float yDiff = (cos(_BoidData[id.x].angle) * _BoidSpeed) % _TextureDimensions.y;
 
     _BoidData[id.x].position += float2(xDiff, yDiff);
     float2 p = _BoidData[id.x].position;
@@ -30,15 +39,49 @@ void MoveBoid(uint3 id){
     else if(p.y > (float)_TextureDimensions.y) _BoidData[id.x].position.y = p.y - _TextureDimensions.y;
 }
 
+float4 c;
+
+//Detect neighbours
+void Detect(uint3 id){
+    for(uint i = 0; i < _BoidCount; i++){
+        if(i == id.x) continue;
+        //Check its part of the same group
+        if (_BoidData[i].group != _BoidData[id.x].group) continue;
+
+        float2 direction = _BoidData[i].position - _BoidData[id.x].position;
+        float distToBoid = distance(_BoidData[i].position, _BoidData[id.x].position);
+
+        //Compare square distance
+        if(distToBoid * distToBoid <= _DetectionDistance * _DetectionDistance){
+
+            float dirAng = abs(atan(direction.x / direction.y));
+            if(direction.y < 0){
+                dirAng = (PI) - dirAng;
+            }
+
+            float angDiff = abs(_BoidData[id.x].angle - dirAng);
+            
+            if(angDiff < _DetectionAngle / 2){
+                //Detected in vision
+                c = float4(1, 0, 0, 1);
+            }
+
+        }
+
+    }
+}
+
 //Draw the boids position to output texture
 void DrawBoid(uint3 id){
-    _BoidMap[(uint2)_BoidData[id.x].position.xy] = float4(_BoidData[id.x].color.r, _BoidData[id.x].color.g, _BoidData[id.x].color.b, 1);
+    _BoidMap[(uint2)_BoidData[id.x].position.xy] = c;
 }
 
 [numthreads(8,1,1)]
 void SimulateBoids (uint3 id : SV_DispatchThreadID)
 {
     if(!(id.x < _BoidCount)) return;
+    c = float4(_BoidData[id.x].color.r, _BoidData[id.x].color.g, _BoidData[id.x].color.b, 1);
     MoveBoid(id);
+    Detect(id);
     DrawBoid(id);
 }

@@ -1,6 +1,7 @@
+RWTexture2D<float4> _Texture;
+
 #pragma kernel Clear
 
-RWTexture2D<float4> _Texture;
 float width, height;
 
 [numthreads(8,8,1)]
