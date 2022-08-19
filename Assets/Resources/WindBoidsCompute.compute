@@ -94,7 +94,7 @@ void Detect(uint3 id){
         if (_BoidData[i].group != _BoidData[id.x].group) continue;
 
         float2 direction = _BoidData[i].position - _BoidData[id.x].position;
-        float distToBoid = distance(_BoidData[id.x].position, _BoidData[id.x].position);
+        float distToBoid = distance(_BoidData[i].position, _BoidData[id.x].position);
 
         //Compare square distance
         if(distToBoid * distToBoid <= _DetectionDistance * _DetectionDistance){
@@ -108,7 +108,9 @@ void Detect(uint3 id){
             float sqrDist = (offsetToBoid.x * offsetToBoid.x + offsetToBoid.y * offsetToBoid.y);
 
             //Normalised to remove bottom half of equaltion
-            float2 cur = normalize(_BoidData[i].velocity);
+            
+            //float2 cur = normalize(_BoidData[i].velocity);    //the bane of my existence
+            float2 cur = normalize(_BoidData[id.x].velocity);   //fixed :smile:
             float2 target = normalize(offsetToBoid);
             
             //Expensive
