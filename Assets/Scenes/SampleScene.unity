@@ -401,13 +401,15 @@ MonoBehaviour:
   outputTextureSize: {x: 256, y: 256}
   outputImage: {fileID: 1312291889}
   clearTrail: 1
-  numberOfBoids: 8
-  speed: 0.5
-  minSpeed: 1
-  maxSpeed: 2
-  detectionDistance: 10
-  detectionAngle: 270
-  avoidanceWeight: 0.05
+  numberOfBoids: 32
+  minSpeed: 5
+  maxSpeed: 20
+  detectionDistance: 20
+  detectionAngle: 180
+  alignmentWeight: 1
+  cohesionWeight: 1
+  avoidanceWeight: 1
+  maxSteerForce: 3
   fadeSpeed: 0.05
 --- !u!4 &1183283917
 Transform:

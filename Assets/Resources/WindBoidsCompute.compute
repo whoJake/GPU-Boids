@@ -6,9 +6,9 @@ struct Boid {
     uint group;
 
     float2 position;
-    float angle;
+    float2 velocity;
 
-    float flockHeading;
+    float2 flockHeading;
     float2 flockCentre;
     float2 seperationHeading;
 
@@ -23,34 +23,65 @@ uint2 _TextureDimensions;
 
 //Simulation settings
 uint _BoidCount;
-float _BoidSpeed;
 float _DetectionDistance;
 float _DetectionAngle;
-//
 
-float maxSpeed, minSpeed;
+//Movement settings
+float _DeltaTime;
+float maxSpeed, minSpeed, maxSteerForce;
 
+float _AlignmentWeight;
+float _CohesionWeight;
 float _AvoidanceWeight;
 
-//Move Boid by one step
+//Handling moving and wrapping the boids position
 void MoveBoid(uint3 id){
-    float xDiff = (sin(_BoidData[id.x].angle) * _BoidSpeed) % _TextureDimensions.x;
-    float yDiff = (cos(_BoidData[id.x].angle) * _BoidSpeed) % _TextureDimensions.y;
-
-    _BoidData[id.x].position += float2(xDiff, yDiff);
-    float2 p = _BoidData[id.x].position;
+    //Move
+    _BoidData[id.x].position += _BoidData[id.x].velocity * _DeltaTime;
 
     //Handling wrapping around the texture
-    if(p.x < 0) _BoidData[id.x].position.x = _TextureDimensions.x + p.x;
-    else if(p.x > (float)_TextureDimensions.x) _BoidData[id.x].position.x = p.x - _TextureDimensions.x;
-
-    
-    if(p.y < 0) _BoidData[id.x].position.y = _TextureDimensions.y + p.y;
-    else if(p.y > (float)_TextureDimensions.y) _BoidData[id.x].position.y = p.y - _TextureDimensions.y;
+    //x wrapping
+    if(_BoidData[id.x].position.x < 0) _BoidData[id.x].position.x += _TextureDimensions.x;
+    else if(_BoidData[id.x].position.x > (float)_TextureDimensions.x) _BoidData[id.x].position.x -= _TextureDimensions.x;
+    //y wrapping
+    if(_BoidData[id.x].position.y < 0) _BoidData[id.x].position.y += _TextureDimensions.y;
+    else if(_BoidData[id.x].position.y > (float)_TextureDimensions.y) _BoidData[id.x].position.y -= _TextureDimensions.y;
 }
 
-void SteerTowards(uint3 id, float targetAngle, float weight){
-    _BoidData[id.x].angle = lerp(_BoidData[id.x].angle, targetAngle, weight);
+float2 GetWeightedSteer(uint3 id, float2 dir, float weight){
+    float2 raw = normalize(dir) * maxSpeed - _BoidData[id.x].velocity;
+    float2 clamped;
+
+    //Clamp steer force
+    if(length(raw) > maxSteerForce) clamped = normalize(raw) * maxSteerForce;
+    else                            clamped = raw;
+
+    return clamped * weight;
+}
+
+void SteerBoid(uint3 id){
+    float2 acceleration = 0;
+
+    //Flock calculation
+    if(_BoidData[id.x].numFlockmates != 0){
+        float2 flockCentre = _BoidData[id.x].flockCentre / _BoidData[id.x].numFlockmates;
+        float2 offsetToFlockCentre = flockCentre - _BoidData[id.x].position;
+
+        float2 alignmentAccel = GetWeightedSteer(id, _BoidData[id.x].flockHeading, _AlignmentWeight);
+        float2 cohesionAccel = GetWeightedSteer(id, offsetToFlockCentre, _CohesionWeight);
+        float2 seperationAccel = GetWeightedSteer(id, _BoidData[id.x].seperationHeading, _AvoidanceWeight);
+
+        acceleration += alignmentAccel;
+        acceleration += cohesionAccel;
+        acceleration += seperationAccel;
+    }
+
+    _BoidData[id.x].velocity += acceleration * _DeltaTime;
+
+    //Clamp velocity
+    float speed = length(_BoidData[id.x].velocity);
+    if(speed < minSpeed) _BoidData[id.x].velocity = normalize(_BoidData[id.x].velocity) * minSpeed;
+    if(speed > maxSpeed) _BoidData[id.x].velocity = normalize(_BoidData[id.x].velocity) * maxSpeed;
 }
 
 float4 c;
@@ -63,34 +94,32 @@ void Detect(uint3 id){
         if (_BoidData[i].group != _BoidData[id.x].group) continue;
 
         float2 direction = _BoidData[i].position - _BoidData[id.x].position;
-        float distToBoid = distance(_BoidData[i].position, _BoidData[id.x].position);
+        float distToBoid = distance(_BoidData[id.x].position, _BoidData[id.x].position);
 
         //Compare square distance
         if(distToBoid * distToBoid <= _DetectionDistance * _DetectionDistance){
 
             //Flock changes
             _BoidData[id.x].numFlockmates += 1;
-            _BoidData[id.x].flockHeading += _BoidData[i].angle;
+            _BoidData[id.x].flockHeading += normalize(_BoidData[i].velocity);
             _BoidData[id.x].flockCentre += _BoidData[i].position;
 
+            float2 offsetToBoid = _BoidData[i].position - _BoidData[id.x].position;
+            float sqrDist = (offsetToBoid.x * offsetToBoid.x + offsetToBoid.y * offsetToBoid.y);
 
-            float dirAng = abs(atan(direction.x / direction.y));
-            if(direction.y < 0){
-                dirAng = (PI) - dirAng;
-            }
-
-            float angDiff = (dirAng - _BoidData[id.x].angle) * (-1 * (direction.x < 0));
+            //Normalised to remove bottom half of equaltion
+            float2 cur = normalize(_BoidData[i].velocity);
+            float2 target = normalize(offsetToBoid);
+            
+            //Expensive
+            float offsetAngle = acos(dot(cur, target));
             
             //Detected in vision
-            if(abs(angDiff) < _DetectionAngle / 2){
+            if(offsetAngle < _DetectionAngle / 2){
                 c = float4(1, 0, 0, 1);
-
-                //Negative target angle so that they steer in the oposite direction
-                SteerTowards(id, _BoidData[id.x].angle + ((_DetectionAngle / 2) - angDiff), _AvoidanceWeight);
+                _BoidData[id.x].seperationHeading -= offsetToBoid / sqrDist;
             }
-
         }
-
     }
 }
 
@@ -113,5 +142,6 @@ void SimulateBoids (uint3 id : SV_DispatchThreadID)
     c = float4(_BoidData[id.x].color.r, _BoidData[id.x].color.g, _BoidData[id.x].color.b, 1);
     MoveBoid(id);
     Detect(id);
+    //SteerBoid(id);
     DrawBoid(id);
 }
