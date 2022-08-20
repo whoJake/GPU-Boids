@@ -19,8 +19,12 @@ public class WindBoids : MonoBehaviour
     public float minSpeed = 1f;
     [Min(0)]
     public float maxSpeed = 2f;
+    [Range(0, 2)]
+    public float boidSpeedDial = 1f;
     [Min(1)]
     public float detectionDistance = 1f;
+    [Min(1)]
+    public float avoidDistance = 1f;
     [Range(0, 360)]
     public float detectionAngle;
     [Range(0, 1)]
@@ -28,7 +32,7 @@ public class WindBoids : MonoBehaviour
     [Range(0, 1)]
     public float cohesionWeight;
     [Range(0, 1)]
-    public float avoidanceWeight;
+    public float seperationWeight;
     [Min(0)]
     public float maxSteerForce;
 
@@ -131,15 +135,18 @@ public class WindBoids : MonoBehaviour
         boidCompute.SetInts("_TextureDimensions", computeDim);
         boidCompute.SetInt("_BoidCount", numberOfBoids);
         boidCompute.SetFloat("_DetectionDistance", detectionDistance);
+        boidCompute.SetFloat("_AvoidDistance", avoidDistance);
         boidCompute.SetFloat("_DetectionAngle", detectionAngle * Mathf.Deg2Rad);
-        boidCompute.SetFloat("_AlignmentWeight", alignmentWeight);
-        boidCompute.SetFloat("_CohesionWeight", cohesionWeight);
-        boidCompute.SetFloat("_AvoidanceWeight", avoidanceWeight);
-        boidCompute.SetFloat("_MaxSteerForce", maxSteerForce);
 
-        boidCompute.SetFloat("_DeltaTime", Time.deltaTime);
+        boidCompute.SetFloat("_Speed", boidSpeedDial);
         boidCompute.SetFloat("_MinSpeed", minSpeed);
         boidCompute.SetFloat("_MaxSpeed", maxSpeed);
+        boidCompute.SetFloat("_MaxSteerForce", maxSteerForce);
+
+        boidCompute.SetFloat("_AlignmentWeight", alignmentWeight);
+        boidCompute.SetFloat("_CohesionWeight", cohesionWeight);
+        boidCompute.SetFloat("_SeperationWeight", seperationWeight);
+
 
         //Dispatch
         boidCompute.Dispatch(0, numOfBatches, 1, 1);

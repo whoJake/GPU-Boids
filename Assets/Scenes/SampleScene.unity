@@ -398,18 +398,20 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fa72093d8d6147d46b89a9c8da5c2c3a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  outputTextureSize: {x: 256, y: 256}
+  outputTextureSize: {x: 512, y: 512}
   outputImage: {fileID: 1312291889}
   clearTrail: 1
-  numberOfBoids: 1024
-  minSpeed: 5
-  maxSpeed: 20
-  detectionDistance: 20
+  numberOfBoids: 3000
+  minSpeed: 0.1
+  maxSpeed: 2
+  boidSpeedDial: 1
+  detectionDistance: 10
+  avoidDistance: 8.5
   detectionAngle: 180
-  alignmentWeight: 1
-  cohesionWeight: 1
-  avoidanceWeight: 1
-  maxSteerForce: 3
+  alignmentWeight: 0.75
+  cohesionWeight: 0.5
+  seperationWeight: 1
+  maxSteerForce: 1
   fadeSpeed: 0.05
 --- !u!4 &1183283917
 Transform:
