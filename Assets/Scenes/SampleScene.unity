@@ -398,13 +398,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fa72093d8d6147d46b89a9c8da5c2c3a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  enableGrid: 0
-  gridDimension: 16
-  outputTextureSizeMultiplier: 2
-  outputTextureSize: {x: 512, y: 512}
+  outputTextureSize: {x: 256, y: 256}
   outputImage: {fileID: 1312291889}
   clearTrail: 1
-  numberOfBoids: 6000
+  numberOfBoids: 1000
   minSpeed: 0.5
   maxSpeed: 5
   boidSpeedDial: 0.5
