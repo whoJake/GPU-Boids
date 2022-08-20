@@ -8,6 +8,16 @@ public class WindBoids : MonoBehaviour
 
     #region Editor Visible Variables
     [Header("Output Settings")]
+    [Tooltip("Overrides outputTextureSize")]
+    public bool enableGrid = true;
+
+    private int cellDimension;
+    [Min(4)]
+    public int gridDimension = 4;
+    [Min(1)]
+    public int outputTextureSizeMultiplier = 16;
+
+    [Tooltip("Is overriden by enableGrid to be cellDimension * gridDimension * outputTextureSizeMultipler in width and height")]
     public Vector2Int outputTextureSize;
     public RawImage outputImage;
     public bool clearTrail;
@@ -57,6 +67,8 @@ public class WindBoids : MonoBehaviour
 
     struct Boid {
         public uint group;
+        public uint cellX;
+        public uint cellY;
 
         public Vector2 position;
         public Vector2 velocity;
@@ -71,7 +83,7 @@ public class WindBoids : MonoBehaviour
 
         public static int Size {
             get {
-                return (sizeof(int))
+                return (sizeof(int) * 3)
                     + (sizeof(float) * 2 * 2)
                     + (sizeof(float) * 2 * 3)
                     + (sizeof(int))
@@ -88,6 +100,13 @@ public class WindBoids : MonoBehaviour
     }
 
     void Start() {
+        cellDimension = Mathf.CeilToInt(detectionDistance) * outputTextureSizeMultiplier;
+        int dim = cellDimension * gridDimension;
+        if (enableGrid) {
+            outputTextureSize.x = dim;
+            outputTextureSize.y = dim;
+        }
+
         outputBoidTexture = new RenderTexture(outputTextureSize.x, outputTextureSize.y, 0);
         outputBoidTexture.filterMode = FilterMode.Point;
         outputBoidTexture.enableRandomWrite = true;
@@ -132,6 +151,9 @@ public class WindBoids : MonoBehaviour
 
         //Set compute variables
         boidCompute.SetTexture(0, "_BoidMap", outputBoidTexture);
+        boidCompute.SetBool("_EnableGrid", enableGrid);
+        boidCompute.SetInt("_CellSize", cellDimension);
+        boidCompute.SetInt("_GridSize", gridDimension);
         boidCompute.SetInts("_TextureDimensions", computeDim);
         boidCompute.SetInt("_BoidCount", numberOfBoids);
         boidCompute.SetFloat("_DetectionDistance", detectionDistance);
@@ -146,7 +168,6 @@ public class WindBoids : MonoBehaviour
         boidCompute.SetFloat("_AlignmentWeight", alignmentWeight);
         boidCompute.SetFloat("_CohesionWeight", cohesionWeight);
         boidCompute.SetFloat("_SeperationWeight", seperationWeight);
-
 
         //Dispatch
         boidCompute.Dispatch(0, numOfBatches, 1, 1);
