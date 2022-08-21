@@ -2,6 +2,7 @@
 static const float PI = 3.14159265f;
 
 struct Boid {
+    //Groups flock to eachother but continue to avoid other group
     uint group;
 
     float2 position;
@@ -12,8 +13,6 @@ struct Boid {
     float2 seperationHeading;
 
     int numFlockmates;
-
-    float4 color;
 };
 
 RWStructuredBuffer<Boid> _BoidData;
@@ -34,6 +33,7 @@ float _MaxSteerForce;
 float _AlignmentWeight;
 float _CohesionWeight;
 float _SeperationWeight;
+float _DifferentGroupSeperationWeight;
 
 
 float2 ClampMagnitude(float2 v, float max){
@@ -105,37 +105,48 @@ void Detect(uint3 id){
         //Boid being checked is same as currently processed one
         if(i == id.x) continue;
 
-        //Check its part of the same group
-        if (_BoidData[i].group != _BoidData[id.x].group) continue;
+        //(accounts for wrapping by looping through each position it can be in (kinda slow but works))
+        bool found = 0;
+        for(int a = -1; a <= 1; a++){
+            for(int b = -1; b <= 1; b++){
+                float2 checkPos = _BoidData[i].position + (_TextureDimensions * float2(a, b));
 
-        float2 direction = _BoidData[i].position - _BoidData[id.x].position;
-        float distToBoid = distance(_BoidData[i].position, _BoidData[id.x].position);
+                float2 direction = checkPos - _BoidData[id.x].position;
+                float distToBoid = distance(checkPos, _BoidData[id.x].position);
 
-        //Compare square distance STILL NEEDS TO ACCOUNT FOR WRAPPING
-        if(distToBoid * distToBoid <= _DetectionDistance * _DetectionDistance){
+                //Compare square distance (accounts for wrapping by looping through each position it can be in (kinda slow but works))
+                if(distToBoid * distToBoid <= _DetectionDistance * _DetectionDistance){
 
-            float2 offsetToBoid = _BoidData[i].position - _BoidData[id.x].position;
-            float sqrDist = (offsetToBoid.x * offsetToBoid.x + offsetToBoid.y * offsetToBoid.y);
+                    bool sameGroup = _BoidData[i].group == _BoidData[id.x].group;
+                    float2 offsetToBoid = checkPos - _BoidData[id.x].position;
+                    float sqrDist = (offsetToBoid.x * offsetToBoid.x + offsetToBoid.y * offsetToBoid.y);
 
-            //Avoidance
-            if(sqrDist < _AvoidDistance * _AvoidDistance) _BoidData[id.x].seperationHeading -= offsetToBoid / sqrDist;
+                    //Avoidance
+                    float diffGroupMulti = 1;
+                    if(!sameGroup) diffGroupMulti = _DifferentGroupSeperationWeight;
 
-            //Normalised to remove bottom half of equaltion
-            //float2 cur = normalize(_BoidData[i].velocity);    //the bane of my existence
-            float2 cur = normalize(_BoidData[id.x].velocity);   //fixed :smile:
-            float2 target = normalize(offsetToBoid);
+                    if(sqrDist < _AvoidDistance * _AvoidDistance) _BoidData[id.x].seperationHeading -= (offsetToBoid / sqrDist) * diffGroupMulti;
+
+                    //Normalised to remove bottom half of equaltion
+                    //float2 cur = normalize(_BoidData[i].velocity);    //the bane of my existence
+                    float2 cur = normalize(_BoidData[id.x].velocity);   //fixed :smile:
+                    float2 target = normalize(offsetToBoid);
             
-            //Expensive
-            float offsetAngle = acos(dot(cur, target));
+                    //Expensive
+                    float offsetAngle = acos(dot(cur, target));
             
-            //Detected in vision
-            if(offsetAngle < _DetectionAngle / 2){
-                //Flock changes
-                _BoidData[id.x].numFlockmates += 1;
-                _BoidData[id.x].flockHeading += normalize(_BoidData[i].velocity);
-                _BoidData[id.x].flockCentre += _BoidData[i].position;
-
+                    //Detected in vision
+                    if(offsetAngle < _DetectionAngle / 2 && sameGroup){
+                        //Flock changes
+                        _BoidData[id.x].numFlockmates += 1;
+                        _BoidData[id.x].flockHeading += normalize(_BoidData[i].velocity);
+                        _BoidData[id.x].flockCentre += _BoidData[i].position;
+                    }
+                    found = 1;
+                    break;
+                }
             }
+            if(found) break;
         }
     }
 }

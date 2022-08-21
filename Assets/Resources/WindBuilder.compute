@@ -50,7 +50,7 @@ void DrawWind (uint3 id : SV_DispatchThreadID)
         for(int b = -_DrawRadius; b <= _DrawRadius; b++){
 
             if(length(int2(a, b)) > _DrawRadius) continue;
-            float strength = _DrawRadius / length(int2(a, b));
+            float strength = (_DrawRadius / length(int2(a, b)));
 
             int editX = (basePos.x + a) % _TextureDimensions.x;
             int editY = (basePos.y + b) % _TextureDimensions.y;

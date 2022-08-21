@@ -13,6 +13,11 @@ public class WindBoids : MonoBehaviour
     public RawImage outputImage;
     [Range(0, 5)]
     public int drawRadius;
+    [Header("Group Settings")]
+    [Min(1)]
+    public int numberOfGroups = 1;
+    [Range(0f, 1f)]
+    public float differentGroupSeperationWeight = 0.5f;
 
     [Header("Boid Settings")]
     [Min(1)]
@@ -96,6 +101,7 @@ public class WindBoids : MonoBehaviour
         windTexture.Create();
 
         outputImage.texture = windTexture;
+        Shader.SetGlobalTexture("_WindTexture", windTexture);
 
         //Perform initial setup
         SetUpBoids();
@@ -108,7 +114,7 @@ public class WindBoids : MonoBehaviour
 
         for (int i = 0; i < numberOfBoids; i++) {
             boidHandler[i] = new Boid {
-                group = 0,
+                group = (uint)Random.Range(0, numberOfGroups),
                 position = new Vector2(Random.Range(0f, outputTextureSize.x), Random.Range(0f, outputTextureSize.y)),
                 velocity = new Vector2(Random.Range(-1f, 1f), Random.Range(-1f, 1f)).normalized * ((maxSpeed - minSpeed) / 2)
             };
@@ -148,6 +154,7 @@ public class WindBoids : MonoBehaviour
         boidCompute.SetFloat("_AlignmentWeight", alignmentWeight);
         boidCompute.SetFloat("_CohesionWeight", cohesionWeight);
         boidCompute.SetFloat("_SeperationWeight", seperationWeight);
+        boidCompute.SetFloat("_DifferentGroupSeperationWeight", differentGroupSeperationWeight);
 
         boidCompute.Dispatch(0, numOfBatches, 1, 1);
         boidBuffer.GetData(boidHandler);
@@ -157,7 +164,7 @@ public class WindBoids : MonoBehaviour
         outputBoids.SetData(boidHandler);
 
         //Draw and build wind
-        windBuilder.SetTexture(0, "_WindOutput", windTexture);
+        windBuilder.SetTextureFromGlobal(0, "_WindOutput", "_WindTexture");
         windBuilder.SetTexture(0, "_LastFrame", lastFrame);
         windBuilder.SetBuffer(0, "_BoidInput", outputBoids);
         windBuilder.SetFloat("_MaxMagnitude", maxSpeed);
