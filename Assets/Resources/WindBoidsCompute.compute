@@ -16,17 +16,8 @@ struct Boid {
     float4 color;
 };
 
-struct Cell {
-    Boid boids[500];
-    uint size;
-};
-
-RWTexture2D<float4> _BoidMap;
 RWStructuredBuffer<Boid> _BoidData;
 uint2 _TextureDimensions;
-
-//Max grid size is 8
-//Cell _Cells[8][8];
 
 //Simulation settings
 float _DetectionDistance;
@@ -139,8 +130,6 @@ void Detect(uint3 id){
             
             //Detected in vision
             if(offsetAngle < _DetectionAngle / 2){
-                c = float4(1, 0, 0, 1);
-                
                 //Flock changes
                 _BoidData[id.x].numFlockmates += 1;
                 _BoidData[id.x].flockHeading += normalize(_BoidData[i].velocity);
@@ -150,12 +139,6 @@ void Detect(uint3 id){
         }
     }
 }
-
-//Draw the boids position to output texture
-void DrawBoid(uint3 id){
-    _BoidMap[(uint2)_BoidData[id.x].position.xy] = c;
-}
-
 
 [numthreads(8,1,1)]
 void SimulateBoids (uint3 id : SV_DispatchThreadID)
@@ -168,9 +151,7 @@ void SimulateBoids (uint3 id : SV_DispatchThreadID)
     _BoidData[id.x].flockCentre = 0;
     _BoidData[id.x].seperationHeading = normalize(_BoidData[id.x].velocity);
 
-    c = float4(_BoidData[id.x].color.r, _BoidData[id.x].color.g, _BoidData[id.x].color.b, 1);
     MoveBoid(id);
     Detect(id);
     SteerBoid(id);
-    DrawBoid(id);
 }
