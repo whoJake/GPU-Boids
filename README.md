@@ -1,2 +1,2 @@
-# Environment
-Playing with weather environments in unity
+GPU-Boids
+2D Boids simulation on the GPU in Unity
