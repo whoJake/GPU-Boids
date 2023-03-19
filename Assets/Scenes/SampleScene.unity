@@ -398,19 +398,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fa72093d8d6147d46b89a9c8da5c2c3a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  outputTextureSize: {x: 512, y: 512}
+  outputTextureSize: {x: 256, y: 256}
   outputImage: {fileID: 1312291889}
   drawRadius: 5
-  numberOfGroups: 3
+  numberOfGroups: 2
   differentGroupSeperationWeight: 0.75
-  numberOfBoids: 3000
+  numberOfBoids: 2000
   minSpeed: 0
   maxSpeed: 5
-  boidSpeedDial: 0.5
+  boidSpeedDial: 0.4
   detectionDistance: 16
   avoidDistance: 8
   detectionAngle: 270
-  alignmentWeight: 0.5
+  alignmentWeight: 0.75
   cohesionWeight: 0.75
   seperationWeight: 1
   maxSteerForce: 2

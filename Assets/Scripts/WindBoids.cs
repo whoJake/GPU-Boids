@@ -44,7 +44,7 @@ public class WindBoids : MonoBehaviour
     public float maxSteerForce;
 
     [Header("Processing Settings")]
-    [Range(1f, 10f)]
+    [Range(0f, 10f)]
     public float fadeSpeed = 1f;
     #endregion
 
@@ -58,6 +58,8 @@ public class WindBoids : MonoBehaviour
 
     private ComputeShader windBuilder;
     private RenderTexture windTexture;
+
+    private ComputeShader gaussianBlur;
     #endregion
 
     #region Compute Helpers
@@ -91,6 +93,7 @@ public class WindBoids : MonoBehaviour
         boidCompute = Resources.Load<ComputeShader>("WindBoidsCompute");
         windBuilder = Resources.Load<ComputeShader>("WindBuilder");
         clearTextureCompute = Resources.Load<ComputeShader>("ClearTexture");
+        gaussianBlur = Resources.Load<ComputeShader>("GaussianBlur");
         #endregion
     }
 
@@ -172,7 +175,6 @@ public class WindBoids : MonoBehaviour
         windBuilder.SetInts("_TextureDimensions", computeDim);
         windBuilder.SetFloat("_DrawRadius", (float)drawRadius);
 
-
         windBuilder.Dispatch(0, numOfBatches, 1, 1);
         outputBoids.Release();
 
@@ -190,6 +192,11 @@ public class WindBoids : MonoBehaviour
         clearTextureCompute.SetFloat("_FadeSpeed", fadeSpeed);
 
         clearTextureCompute.Dispatch(0, numBatchX, numBatchY, 1);
+
+        gaussianBlur.SetTexture(0, "_Input", rt);
+        gaussianBlur.SetInt("width", rt.width);
+        gaussianBlur.SetInt("height", rt.height);
+        gaussianBlur.Dispatch(0, numBatchX, numBatchY, 1);
     }
 
 }

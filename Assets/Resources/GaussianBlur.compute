@@ -1,0 +1,22 @@
+#pragma kernel GaussianBlur
+
+RWTexture2D<float4> _Input;
+int width, height;
+
+[numthreads(8,8,1)]
+void GaussianBlur (uint3 id : SV_DispatchThreadID)
+{
+    float4 rolling = 0;
+    for(int a = -1; a <= 1; a++){
+        for(int b = -1; b <= 1; b++){
+            int2 pos = int2(id.x + a, id.y + b);
+            if(pos.x < 0) pos.x += width;
+            if(pos.x >= width) pos.x -= width;
+            if(pos.y < 0) pos.y += height;
+            if(pos.y >= height) pos.y -= height;
+
+            rolling += _Input[pos.xy];
+        }
+    }
+    _Input[id.xy] = rolling / 9;
+}
