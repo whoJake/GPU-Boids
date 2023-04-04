@@ -14,3 +14,7 @@ Boids are generated on the CPU with random positions and velocities. This data i
 
 ### Settings available to play with in real-time
 ![Settings](https://user-images.githubusercontent.com/37589250/229784689-f83f3bc6-f371-4d2c-bf61-89a63e021be6.png)
+
+
+## Improvements and next steps for this project
+I have plans to rewrite this project at some point but implement spatial hashing into it all. I tried to do this at some point during this project but was approaching it wrong. It should massively improve performance and allow me to run simulations with boids in the 10-100 thousands as right now theres a limit of around 6000. I've never implemented spatial hashing so it should be a good learning experience with very practical use cases.
