@@ -40,8 +40,11 @@ float2 ClampMagnitude(float2 v, float min, float max){
 float invLerp(float a, float b, float val){
   return (val - a) / (b - a);
 }
-
-[numthreads(8,1,1)]
+/*
+*   Takes boids as input and draws them onto the render target
+*   Also takes brush size into account and at the moment, colours them based on their velocity
+*/
+[numthreads(64,1,1)]
 void DrawWind (uint3 id : SV_DispatchThreadID)
 {
     int2 basePos = (int2)_BoidInput[id.x].position.xy;
@@ -49,7 +52,10 @@ void DrawWind (uint3 id : SV_DispatchThreadID)
     for(int a = -_DrawRadius; a <= _DrawRadius; a++){
         for(int b = -_DrawRadius; b <= _DrawRadius; b++){
 
+            //Ensure circle is drawn
             if(length(int2(a, b)) > _DrawRadius) continue;
+
+            //Fade brush towards the edge
             float strength = (_DrawRadius / length(int2(a, b)));
 
             int editX = (basePos.x + a) % _TextureDimensions.x;

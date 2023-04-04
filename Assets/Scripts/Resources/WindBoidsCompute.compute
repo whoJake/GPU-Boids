@@ -106,6 +106,7 @@ void Detect(uint3 id){
         if(i == id.x) continue;
 
         //(accounts for wrapping by looping through each position it can be in (kinda slow but works))
+        //I dont think this works :/
         bool found = 0;
         for(int a = -1; a <= 1; a++){
             for(int b = -1; b <= 1; b++){
@@ -151,7 +152,7 @@ void Detect(uint3 id){
     }
 }
 
-[numthreads(8,1,1)]
+[numthreads(64,1,1)]
 void SimulateBoids (uint3 id : SV_DispatchThreadID)
 {
     if(!(id.x < _BoidCount)) return;

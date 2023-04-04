@@ -1,6 +1,6 @@
-RWTexture2D<float4> _Texture;
-
 #pragma kernel Clear
+
+RWTexture2D<float4> _Texture;
 
 float width, height;
 float _FadeSpeed;

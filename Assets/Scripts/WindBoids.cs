@@ -60,9 +60,6 @@ public class WindBoids : MonoBehaviour
     private RenderTexture windTexture;
 
     private ComputeShader gaussianBlur;
-    #endregion
-
-    #region Compute Helpers
     private ComputeShader clearTextureCompute;
     #endregion
 
@@ -93,16 +90,18 @@ public class WindBoids : MonoBehaviour
         boidCompute = Resources.Load<ComputeShader>("WindBoidsCompute");
         windBuilder = Resources.Load<ComputeShader>("WindBuilder");
         clearTextureCompute = Resources.Load<ComputeShader>("ClearTexture");
-        gaussianBlur = Resources.Load<ComputeShader>("GaussianBlur");
+        gaussianBlur = Resources.Load<ComputeShader>("BoxBlur");
         #endregion
     }
 
     void Start() {
         windTexture = new RenderTexture(outputTextureSize.x, outputTextureSize.y, 0);
+        //Bilinear should probably be used but I like the look of point filtering in the demo
         windTexture.filterMode = FilterMode.Point;
         windTexture.enableRandomWrite = true;
         windTexture.Create();
 
+        //Let texture be sampled globally
         outputImage.texture = windTexture;
         Shader.SetGlobalTexture("_WindTexture", windTexture);
 
@@ -111,7 +110,10 @@ public class WindBoids : MonoBehaviour
         computeDim = new int[2] { outputTextureSize.x, outputTextureSize.y };
     }
 
-    //Set position, random direction, random colour
+    /*
+     * Set initial variables for simulation
+     * Random Position, velocity and group (if there are groups)
+     */
     void SetUpBoids() {
         boidHandler = new Boid[numberOfBoids];
 
@@ -135,8 +137,7 @@ public class WindBoids : MonoBehaviour
 
 
         //Setup compute variables
-        int numOfBatches = Mathf.CeilToInt(numberOfBoids / 8);
-
+        int numOfBatches = Mathf.CeilToInt(numberOfBoids / 64f);
 
         var boidBuffer = new ComputeBuffer(numberOfBoids, Boid.Size);
         boidBuffer.SetData(boidHandler);
@@ -181,10 +182,10 @@ public class WindBoids : MonoBehaviour
         lastFrame.Release();
     }
 
-
+    //Could release and rebuild to empty out the texture but this includes the fade speed
     void ClearTexture(RenderTexture rt) {
-        int numBatchX = Mathf.CeilToInt(rt.width / 8);
-        int numBatchY = Mathf.CeilToInt(rt.height / 8);
+        int numBatchX = Mathf.CeilToInt(rt.width / 8f);
+        int numBatchY = Mathf.CeilToInt(rt.height / 8f);
 
         clearTextureCompute.SetTexture(0, "_Texture", rt);
         clearTextureCompute.SetFloat("width", rt.width);

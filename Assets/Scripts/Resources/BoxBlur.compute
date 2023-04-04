@@ -1,11 +1,12 @@
-#pragma kernel GaussianBlur
+#pragma kernel BoxBlur
 
 RWTexture2D<float4> _Input;
 int width, height;
 
 [numthreads(8,8,1)]
-void GaussianBlur (uint3 id : SV_DispatchThreadID)
+void BoxBlur (uint3 id : SV_DispatchThreadID)
 {
+    //Naive, slow box blur
     float4 rolling = 0;
     for(int a = -1; a <= 1; a++){
         for(int b = -1; b <= 1; b++){
